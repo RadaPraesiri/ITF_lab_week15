@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DooFood</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fff8ef;
+    --primary: #ff6b35;
+    --primary-dark: #e5531d;
+    --text: #2d2a26;
+    --muted: #7a7268;
+  }
+
+  body {
+    font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ---------- Navbar ---------- */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+  }
+  .navbar h1 {
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+  }
+  .star-btn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    transition: background .2s, transform .2s;
+  }
+  .star-btn:hover { background: rgba(255, 255, 255, .2); transform: translateY(-50%) scale(1.1); }
+  .star-btn svg { width: 28px; height: 28px; fill: #ffd84a; stroke: #fff; stroke-width: 1; }
+
+  /* ---------- Main ---------- */
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 16px 48px;
+    text-align: center;
+  }
+  .hint {
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 1.05rem;
+    min-height: 1.6em;
+  }
+
+  .cards {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  /* ---------- Card (flip) ---------- */
+  .card {
+    width: 260px;
+    height: 400px;
+    perspective: 1000px;
+    cursor: pointer;
+    transition: transform .25s, opacity .3s, filter .3s;
+    animation: deal .45s ease both;
+  }
+  .card:nth-child(2) { animation-delay: .1s; }
+  .card:nth-child(3) { animation-delay: .2s; }
+  @keyframes deal {
+    from { opacity: 0; transform: translateY(-30px) scale(.9); }
+    to   { opacity: 1; transform: none; }
+  }
+  .card:not(.flipped):not(.locked):hover { transform: translateY(-8px); }
+  .card.locked { cursor: default; }
+  .card.dimmed { opacity: .35; filter: grayscale(.6); }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform .7s;
+    transform-style: preserve-3d;
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+  }
+
+  .back {
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 10px, transparent 10px 20px),
+      linear-gradient(135deg, #ff6b35, #f7b733);
+    border: 6px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #fff;
+    gap: 10px;
+  }
+  .back .emoji { font-size: 4rem; }
+  .back .label { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
+
+  .front {
+    background: #fff;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  .front .img-wrap {
+    height: 190px;
+    background: #ffe9d6;
+    flex-shrink: 0;
+  }
+  .front img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .front .info {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .food-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+  .food-desc { font-size: .92rem; color: var(--muted); line-height: 1.5; flex: 1; }
+  .food-price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+    text-align: right;
+  }
+
+  /* ---------- Button ---------- */
+  .random-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 14px 40px;
+    font-size: 1.2rem;
+    font-family: inherit;
+    font-weight: 700;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(255, 107, 53, .4);
+    transition: background .2s, transform .15s;
+  }
+  .random-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
+  .random-btn:active { transform: translateY(0); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 36px 32px 28px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    animation: pop .25s ease;
+  }
+  @keyframes pop {
+    from { transform: scale(.8); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .modal h2 { font-size: 1.5rem; color: var(--primary-dark); line-height: 1.4; }
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .modal-close:hover { color: var(--text); }
+
+  @media (max-width: 600px) {
+    .card { width: 240px; height: 380px; }
+    .front .img-wrap { height: 170px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <h1>DooFood</h1>
+  <button class="star-btn" id="starBtn" aria-label="เปิดหน้าต่างข้อความ">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+  </button>
+</nav>
+
+<main>
+  <p class="hint" id="hint"></p>
+  <div class="cards" id="cards"></div>
+  <button class="random-btn" id="randomBtn">🎲 สุ่มการ์ด</button>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" id="modalClose" aria-label="ปิด">&times;</button>
+    <h2>อยากกินก็ดู ไม่อยากดูก็กิน</h2>
+  </div>
+</div>
+
+<script>
+  // ---------- ข้อมูลอาหาร 10 เมนู ----------
+  // หมายเหตุ: เปลี่ยนค่า img เป็นลิงก์รูปที่ต้องการได้เลย
+  // ถ้ารูปโหลดไม่ได้ ระบบจะแสดงรูปอิโมจิแทนอัตโนมัติ
+  const foods = [
+    { name: "ผัดไทยกุ้งสด", img: "https://static.thairath.co.th/media/dFQROr7oWzulq5Fa4L4Rd8MLOlOmSncXz8W8GdUwTNuJtQeNqJ2Uxs9oooZsdiqOsqy.webp", price: 40,  kw: "padthai",
+      desc: "เส้นเล็กผัดซอสมะขามเปรี้ยวหวาน ใส่กุ้งสด เต้าหู้ ถั่วงอก เสิร์ฟพร้อมถั่วป่นและมะนาว" },
+    { name: "ซาลาเปา", img: "https://img.kapook.com/u/2015/surauch/cook2/salapao.jpg", price: 35, kw: "salapao",
+      desc: "ก้อนขนมปังนุ่มนิ่ม เติมด้วยไส้ต่างๆทั้งคาวและหวาน" },
+    { name: "ข้าวผัดกะเพราไก่ไข่ดาว", img: "https://png.pngtree.com/background/20241011/original/pngtree-fried-egg-over-stirfried-chicken-and-holy-basil-rice-dish-photo-picture-image_10847793.jpg", price: 60,  kw: "basil,chicken,rice",
+      desc: "ไก่สับผัดกะเพราเผ็ดร้อน หอมใบกะเพรา เสิร์ฟบนข้าวสวยร้อน ๆ พร้อมไข่ดาวกรอบ" },
+    { name: "ส้มตำไทย", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI7RtvfsVSrg42CynoMnZVXlIulpgSW1QQOGdnhpqlDhYAm1NUa7JV36FP&s=10", price: 50,  kw: "papaya,salad",
+      desc: "มะละกอสับตำกับน้ำปลา มะนาว พริก และถั่วลิสง รสเปรี้ยวหวานเผ็ดกำลังดี" },
+    { name: "ลาบหมู/ไก่/ปลาดุกฟู", img: "https://static.thairath.co.th/media/dFQROr7oWzulq5Fa6rpMOnZ7qvx5h2vIBvenPj81tAZcIkzjz19kfGNlOmCbZrvSXTf.jpg", price: 60,  kw: "larb",
+      desc: "เปรี้ยว เผ็ด เค็ม ใส่หอมแดงและใบสะระแหน่" },
+    { name: "ข้าวมันไก่", img: "https://fit-d.com/image_webp/f?src=./uploads/food/0e26c50a40bd9f0157c5c57a8c268b29.jpg", price: 40,  kw: "chicken,rice",
+      desc: "ไก่ต้มเนื้อนุ่ม เสิร์ฟกับข้าวมัน น้ำจิ้มเต้าเจี้ยวสูตรเด็ด และน้ำซุปร้อน ๆ" },
+    { name: "ก๋วยเตี๋ยวเรือ", img: "https://www.dramaqueenchilli.com/wp-content/uploads/2024/04/blog11.jpg", price: 45,  kw: "boatnoodles",
+      desc: "น้ำซุปเข้มข้นสีเข้ม หอมเครื่องเทศ เส้นเล็กนุ่ม หมูสด ลูกชิ้น และผักบุ้งกรอบ" },
+    { name: "ข้าวเหนียวไก่ย่าง", img: "https://img.kapook.com/u/patcharin/Food/Thai%20food/stickyt.jpg", price: 40, kw: "sticky,rice,chicken",
+      desc: "ข้าวเหนียว กับไก่ย่างที่หอมหวานจนคนขโมยและสุด็อกขอกิน" },
+    { name: "ข้าวต้มหมู/ไก่", img: "https://recipe.ajinomoto.co.th/upload/media/recipe/6/1147/873788e5-457a-4874-9aae-7484b0e4e1cc.webp", price: 40,  kw: "soup,rice",
+      desc: "ข้าวต้มร้อนๆ ใส่เนื้อสัตว์ โรยด้วยผักชี กระเทียม พริกไทย" },
+    { name: "หมูกระทะ", img: "https://static.thairath.co.th/media/BUCz3kW7pmsIQUeyCdl667Pr2CyP7F7cvxcI4ZdACQIRzP7sbdLDCuAH6.jpg", price: 199, kw: "koreanbbq,pork",
+      desc: "หมูสไลซ์หมักสูตรพิเศษ ผักสด และเส้นหมี่ ย่างบนกระทะร้อน ๆ กินกับน้ำจิ้มแจ่ว" }
+  ];
+
+  const cardsEl   = document.getElementById("cards");
+  const hintEl    = document.getElementById("hint");
+  const randomBtn = document.getElementById("randomBtn");
+
+  let picked = false;
+
+  // สุ่มเลือก n รายการที่ไม่ซ้ำกัน
+  function pickRandom(arr, n) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, n);
+  }
+
+  // รูปสำรองกรณีโหลดรูปไม่ได้ (SVG อิโมจิ)
+  function fallbackImg(emoji) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'>
+      <rect width='100%' height='100%' fill='#ffe9d6'/>
+      <text x='50%' y='55%' font-size='120' text-anchor='middle' dominant-baseline='middle'>${emoji}</text></svg>`;
+    return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+  }
+
+  function createCard(food, index) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const imgUrl = food.img || `https://loremflickr.com/480/320/${food.kw}?lock=${index + 1}`;
+
+    card.innerHTML = `
+      <div class="card-inner">
+        <div class="face back">
+          <span class="emoji">🍽️</span>
+          <span class="label">DooFood</span>
+        </div>
+        <div class="face front">
+          <div class="img-wrap"><img alt="" loading="lazy"></div>
+          <div class="info">
+            <div class="food-name"></div>
+            <div class="food-desc"></div>
+            <div class="food-price"></div>
+          </div>
+        </div>
+      </div>`;
+
+    const img = card.querySelector("img");
+    img.alt = food.name;
+    img.onerror = () => { img.onerror = null; img.src = fallbackImg(food.emoji); };
+    img.src = imgUrl;
+
+    card.querySelector(".food-name").textContent  = food.name;
+    card.querySelector(".food-desc").textContent  = food.desc;
+    card.querySelector(".food-price").textContent = `฿${food.price}`;
+
+    card.addEventListener("click", () => selectCard(card));
+    return card;
+  }
+
+  function selectCard(card) {
+    if (picked) return;
+    picked = true;
+    card.classList.add("flipped");
+    [...cardsEl.children].forEach(c => {
+      c.classList.add("locked");
+      if (c !== card) c.classList.add("dimmed");
+    });
+    hintEl.textContent = "นี่คือเมนูของคุณ! ไม่ถูกใจ กดสุ่มใหม่ได้เลย";
+  }
+
+  function deal() {
+    picked = false;
+    cardsEl.innerHTML = "";
+    hintEl.textContent = "เลือกการ์ด 1 ใบ เพื่อดูว่าวันนี้จะได้กินอะไร";
+    pickRandom(foods, 3).forEach(f => {
+      cardsEl.appendChild(createCard(f, foods.indexOf(f)));
+    });
+  }
+
+  randomBtn.addEventListener("click", deal);
+
+  // ---------- Modal ----------
+  const overlay = document.getElementById("modalOverlay");
+  const openModal  = () => overlay.classList.add("show");
+  const closeModal = () => overlay.classList.remove("show");
+
+  document.getElementById("starBtn").addEventListener("click", openModal);
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+  deal();
+</script>
+</body>
+</html>
